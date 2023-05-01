@@ -1,0 +1,94 @@
+CREATE TABLE customers (
+id INTEGER PRIMARY KEY,
+name VARCHAR(255),
+email VARCHAR(255),
+phone VARCHAR(20),
+address VARCHAR(255)
+);
+public class Customer {
+privateint id;
+private String name;
+private String email;
+private String phone;
+private String address;
+
+    // Constructors, getters, and setters
+}
+create a JAX-RS resource class to handle HTTP requests:
+@Path("/customers")
+public class CustomerResource {
+    @GET
+@Produces(MediaType.APPLICATION_JSON)
+public List<Customer>getCustomers() {
+        List<Customer> customers = new ArrayList<>();
+
+        // Connect to the database using JDBC
+try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydatabase", "root", "password");
+             Statement stmt = conn.createStatement();
+ResultSetrs = stmt.executeQuery("SELECT * FROM customers")) {
+
+            // Iterate through the result set and add each customer to the list
+while (rs.next()) {
+                Customer customer = new Customer();
+customer.setId(rs.getInt("id"));
+customer.setName(rs.getString("name"));
+customer.setEmail(rs.getString("email"));
+customer.setPhone(rs.getString("phone"));
+customer.setAddress(rs.getString("address"));
+customers.add(customer);
+            }
+        } catch (SQLException ex) {
+ex.printStackTrace();
+        }
+
+return customers;
+    }
+create a web service client to invoke the web service code:
+    @PUT
+@Path("/{id}")
+@Consumes(MediaType.APPLICATION_JSON)
+public Response updateCustomer(@PathParam("id") int id, Customer customer) {
+        // Update the customer in the database using JDBC
+try (Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/mydatabase", "root", "password");
+PreparedStatementstmt = conn.prepareStatement("UPDATE customers SET name=?, email=?, phone=?, address=? WHERE id=?")) {
+
+stmt.setString(1, customer.getName());
+stmt.setString(2, customer.getEmail());
+stmt.setString(3, customer.getPhone());
+stmt.setString(4, customer.getAddress());
+stmt.setInt(5, id);
+introwsUpdated = stmt.executeUpdate();
+
+if (rowsUpdated == 0) {
+returnResponse.status(Response.Status.NOT_FOUND).build();
+            }
+        } catch (SQLException ex) {
+ex.printStackTrace();
+returnResponse.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        }
+
+returnResponse.ok().build();
+    }
+}
+
+public class CustomerClient {
+public static void main(String[] args) {
+        // Create a client to communicate with the web service using JAX-RS
+        Client client = ClientBuilder.newClient();
+
+        // Get the list of customers from the web service
+WebTarget target = client.target("http://localhost:8080/myapp/customers");
+        List<Customer> customers = target.request(MediaType.APPLICATION_JSON).get(new GenericType<List<Customer>>() {});
+System.out.println(customers);
+
+        // Update a customer in the database using the web service
+        Customer customer = new Customer();
+customer.setName("John Doe");
+customer.setEmail("johndoe@example.com");
+customer.setPhone("555-1231234");
+customer.setAddress("123 Main St, Anytown USA");
+        Response response = target.path("1").request().put(Entity.entity(customer, MediaType.APPLICATION_JSON));
+System.out.println(response.getStatus());
+client.close();
+    }
+}
